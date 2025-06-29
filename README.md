@@ -133,5 +133,79 @@ roslaunch turtlebot3_bringup turtlebot3_lidar.launch
 
 - RViz에서 확인 가능
 
+
+## SLAM
+: SLAM(Simultaneous Localization and Mapping) 
+-> TurtleBot3는 2D LiDAR와 오도메트리(Encoder 등)를 기반으로 실내 공간의 맵을 자동으로 생성
+| 구성 요소         | 설명                                                         |
+|------------------|--------------------------------------------------------------|
+| LiDAR 센서        | 주변 환경을 스캔하여 거리 정보 수집                            |
+| 오도메트리        | 로봇의 이동 거리 및 방향 정보 (엔코더, IMU 등으로 계산)         |
+| particle filter   | 다양한 위치 가설을 기반으로 로봇의 위치를 확률적으로 추정       |
+| Grid Map         | 공간을 격자로 나누어 빈 공간과 장애물을 구분하여 지도화         |
+
+### Gmapping SLAM
+-  대표적인 2D SLAM 알고리즘
+-  Rao-Blackwellized Particle Filter (RBPF) 방식 기반
+
+### 동작 과정 in Gazebo
+1. 로봇은 초기 위치를 모른 채 시작
+2. LiDAR 센서로 주변 환경을 인식
+3. 다양한 위치 가설(particle)을 바탕으로 위치와 지도를 동시에 업데이트
+4. 최종적으로 실시간 2D 맵 생성
+
+### 주요 구성
+| 요소          | 설명                                       |
+|---------------|--------------------------------------------|
+| LiDAR         | 실시간 거리 데이터 획득                   |
+| Odometry      | 이동 방향 및 속도 추정                    |
+| Grid Map      | 2D 격자 맵 (빈공간, 장애물, 미지의 공간)    |
+| Particle filter    | 위치 가설 업데이트                        |
+
+### turtlebot SLAM 
+
+1. 로봇 bringup 실행
+   ```bash
+   roslaunch turtlebot3_bringup turtlebot3_robot.launch
+   ```
+
+2. SLAM 시작 (예: Gmapping)
+   ```bash
+   roslaunch turtlebot3_slam turtlebot3_slam.launch
+   ```
+
+3. RViz에서 `/map`, `/scan`, `/tf` 토픽 확인
+
+4. 지도 저장
+   ```bash
+   rosrun map_server map_saver -f ~/map_name
+   ```
+
+## AMCL 기반 위치 추정
+- AMCL (Adaptive Monte Carlo Localization)
+- gazebo 상에 map을 불러오고, amcl을 이용해서 맵 상에서의 로봇 위치를 추정 
+
+### 1. Gazebo에서 저장된 맵 사용 설정
+
+```bash
+roslaunch turtlebot3_navigation turtlebot3_navigation.launch map_file:=$HOME/map/my_map.yaml
+```
+
+### 2. Gazebo 시뮬레이션 환경 로드
+
+```bash
+export TURTLEBOT3_MODEL=burger
+roslaunch turtlebot3_gazebo turtlebot3_world.launch
+```
+
+### 3. AMCL 위치 추정 실행
+
+```bash
+roslaunch turtlebot3_navigation turtlebot3_navigation.launch map_file:=$HOME/map/my_map.yaml
+```
+
+### 4. RViz에서 초기 위치 지정
+- RViz에서 "2D Pose Estimate" 버튼을 눌러 로봇의 초기 위치를 수동으로 설정.
+  -> AMCL이 LiDAR 데이터를 바탕으로 로봇의 위치를 자동으로 추정
 ---
 
