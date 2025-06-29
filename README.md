@@ -1,4 +1,4 @@
-# turtlebot3_slam-
+# turtlebot3_Autonomous Driving
 2025 05 - 2025 06
 
 turtlebot 주요 기능 :
@@ -7,12 +7,21 @@ turtlebot 주요 기능 :
 - navigation(move_base 이용 자율 주행)
 - Obstacle avoidance(Lidar 센서 이용 장애물 감지 및 회피)
 
+![image](https://github.com/user-attachments/assets/96a16fe4-56b0-4d69-9581-e3e6ad8fa929)
 
-# TurtleBot 세팅 가이드
+**자율주행 과정 요약** 
+1. SLAM으로 맵 작성
+2. AMCL로 현재 위치 추정
+3. RViz에서 목표 위치 지정 (2D Nav Goal)
+4. Global Planner가 전역 경로 계산
+5. Local Planner가 실시간 주행 경로 계산
+6. move_base를 통해 실제 자율주행 수행
+
+## TurtleBot 세팅 가이드
 
 초기 설치, 센서 확인, 카메라 연결 등 
 
-##  필수 패키지 설치 (원격 PC 기준)
+###  필수 패키지 설치 (원격 PC 기준)
 
 ```bash
 sudo apt-get install ros-noetic-joy ros-noetic-teleop-twist-joy ros-noetic-teleop-twist-keyboard ros-noetic-laser-proc ros-noetic-rgbd-launch ros-noetic-rosserial-arduino ros-noetic-rosserial-python ros-noetic-rosserial-client ros-noetic-rosserial-msgs ros-noetic-amcl ros-noetic-map-server ros-noetic-move-base ros-noetic-urdf ros-noetic-xacro ros-noetic-compressed-image-transport ros-noetic-rqt* ros-noetic-rviz ros-noetic-gmapping ros-noetic-navigation ros-noetic-interactive-markers
@@ -22,7 +31,7 @@ sudo apt install ros-noetic-turtlebot3-msgs
 sudo apt install ros-noetic-turtlebot3
 ```
 
-##  네트워크 연결
+###  네트워크 연결
 
 - **공통 네트워크 사용**: TurtleBot과 원격 PC를 동일한 네트워크(예: 핫스팟)로 연결
 - **TurtleBot 내부 설정**:
@@ -36,9 +45,9 @@ sudo apt install ros-noetic-turtlebot3
   ifconfig
   ```
 
-##  환경 변수 설정
+###  환경 변수 설정
 
-### TurtleBot (On-board PC)
+1. TurtleBot (On-board PC)
 
 ```bash
 nano ~/.bashrc
@@ -46,7 +55,7 @@ nano ~/.bashrc
 source ~/.bashrc
 ```
 
-### 원격 PC (Laptop 등)
+2. 원격 PC (Laptop 등)
 
 ```bash
 nano ~/.bashrc
@@ -55,16 +64,16 @@ nano ~/.bashrc
 source ~/.bashrc
 ```
 
-##  카메라 확인
+###  카메라 확인
 
-### 1. Custom Package 생성
+1. Custom Package 생성
 
 ```bash
 cd ~/catkin_ws/src
 catkin_create_pkg school_classes std_msgs rospy roscpp
 ```
 
-### 2. `CMakeLists.txt` 설정
+2. `CMakeLists.txt` 설정
 
 ```cmake
 find_package(catkin REQUIRED COMPONENTS
@@ -82,7 +91,7 @@ add_executable(school_classes_node src/school_classes_node.cpp)
 target_link_libraries(school_classes_node ${catkin_LIBRARIES})
 ```
 
-### 3. 카메라 Subscribe 코드 예시 (C++)
+3. 카메라 Subscribe 코드 예시 (C++)
 
 ```cpp
 #include <ros/ros.h>
@@ -105,7 +114,7 @@ int main(int argc, char **argv) {
 }
 ```
 
-### 4. Launch 파일 생성
+4. Launch 파일 생성
 
 ```xml
 <!-- launch/image_subscriber_node.launch -->
@@ -114,7 +123,7 @@ int main(int argc, char **argv) {
 </launch>
 ```
 
-### 5. 빌드 및 실행
+5. 빌드 및 실행
 
 ```bash
 cd ~/catkin_ws
@@ -123,7 +132,7 @@ source devel/setup.bash
 roslaunch school_classes image_subscriber_node.launch
 ```
 
-##  LiDAR 연결
+###  LiDAR 연결
 
 - SSH 터미널에서 실행:
 
@@ -208,4 +217,53 @@ roslaunch turtlebot3_navigation turtlebot3_navigation.launch map_file:=$HOME/map
 - RViz에서 "2D Pose Estimate" 버튼을 눌러 로봇의 초기 위치를 수동으로 설정.
   -> AMCL이 LiDAR 데이터를 바탕으로 로봇의 위치를 자동으로 추정
 ---
+
+## 자율주행
+- 목표 지점을 지정하면 로봇이 경로를 계산하고 장애물을 피하며 자율적으로 주행
+- `move_base` 노드를 통해 수행
+-  global/local planner와 costmap 활용
+
+### 1. 목표 지점 설정
+
+- RViz에서 **2D Nav Goal** 버튼 클릭
+- 목적지 위치 및 방향 설정
+
+### 2. Global Path Planner
+
+- 역할: 전체 맵 기준으로 목표 지점까지 최적 경로 생성
+- 알고리즘: **Dijkstra 기반**
+- 참고 데이터: `global_costmap` (정적 장애물 포함)
+
+-> Dijkstra 
+| 항목   | 내용                                |
+|--------|-------------------------------------|
+| 용도   | 전체 경로 생성 (Global Path)        |
+| 방식   | 그래프 기반 최단 경로 탐색          |
+| 특징   | 안정적, 장애물 회피 경로 계산 가능  |
+| 한계   | 계산량이 많고 느릴 수 있음          |
+
+### 3. Local Path Planner
+
+- 역할: 로봇 주변 실시간 장애물 상황을 반영하여 실제 주행 가능한 경로 생성
+- 알고리즘: **DWA (Dynamic Window Approach)**
+- 참고 데이터: `local_costmap` (센서 기반 동적 장애물)
+  
+-> DWA
+| 항목   | 내용                                      |
+|--------|-------------------------------------------|
+| 용도   | 실시간 주행 경로 생성 (Local Path)         |
+| 방식   | 속도/회전 조합을 시뮬레이션하여 최적 선택 |
+| 특징   | 동적 장애물 회피, 부드러운 주행 경로 생성 |
+| 한계   | 복잡한 환경에서 local minimum 가능성 있음 |
+
+### 4. Costmap
+
+| 종류            | 설명                                         |
+|-----------------|----------------------------------------------|
+| Global Costmap  | 정적 장애물 정보 기반 전체 지도              |
+| Local Costmap   | 센서 데이터 기반, 실시간 동적 장애물 반영 지도 |
+
+
+
+
 
