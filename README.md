@@ -17,6 +17,8 @@ turtlebot 주요 기능 :
 5. Local Planner가 실시간 주행 경로 계산
 6. move_base를 통해 실제 자율주행 수행
 
+
+
 ## TurtleBot 세팅 가이드
 
 초기 설치, 센서 확인, 카메라 연결 등 
@@ -143,6 +145,8 @@ roslaunch turtlebot3_bringup turtlebot3_lidar.launch
 - RViz에서 확인 가능
 
 
+
+
 ## SLAM
 : SLAM(Simultaneous Localization and Mapping) 
 -> TurtleBot3는 2D LiDAR와 오도메트리(Encoder 등)를 기반으로 실내 공간의 맵을 자동으로 생성
@@ -190,6 +194,8 @@ roslaunch turtlebot3_bringup turtlebot3_lidar.launch
    rosrun map_server map_saver -f ~/map_name
    ```
 
+
+
 ## AMCL 기반 위치 추정
 - AMCL (Adaptive Monte Carlo Localization)
 - gazebo 상에 map을 불러오고, amcl을 이용해서 맵 상에서의 로봇 위치를 추정 
@@ -216,7 +222,9 @@ roslaunch turtlebot3_navigation turtlebot3_navigation.launch map_file:=$HOME/map
 ### 4. RViz에서 초기 위치 지정
 - RViz에서 "2D Pose Estimate" 버튼을 눌러 로봇의 초기 위치를 수동으로 설정.
   -> AMCL이 LiDAR 데이터를 바탕으로 로봇의 위치를 자동으로 추정
----
+
+
+
 
 ## 자율주행
 - 목표 지점을 지정하면 로봇이 경로를 계산하고 장애물을 피하며 자율적으로 주행
